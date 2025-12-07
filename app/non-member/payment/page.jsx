@@ -1,133 +1,76 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRouter } from "next/navigation";
 
 export default function NonMemberPaymentPage() {
-  const router = useRouter()
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [showKeypad, setShowKeypad] = useState(false)
+  const router = useRouter();
 
-  const handleNumberClick = (num) => {
-    if (phone.length < 11) {
-      setPhone(phone + num)
-    }
-  }
-
-  const handle010Click = () => {
-    setPhone("010")
-  }
-
-  const handleDelete = () => {
-    setPhone(phone.slice(0, -1))
-  }
-
-  const handleClear = () => {
-    setPhone("")
-  }
-
-  const handlePayment = () => {
-    if (!name.trim()) {
-      alert("이름을 입력해주세요.")
-      return
-    }
-    if (phone.length !== 11) {
-      alert("전화번호 11자리를 입력해주세요.")
-      return
-    }
-
-    // 실제로는 결제 모듈 호출
-    // 여기서는 바로 성공 페이지로 이동
-    router.push(`/non-member/success?name=${encodeURIComponent(name)}&phone=${phone}`)
-  }
-
-  const formatPhoneNumber = (number) => {
-    if (number.length <= 3) return number
-    if (number.length <= 7) return `${number.slice(0, 3)}-${number.slice(3)}`
-    return `${number.slice(0, 3)}-${number.slice(3, 7)}-${number.slice(7)}`
-  }
+  // 🏦 관리자 계좌 정보
+  const BANK_INFO = {
+    bank: "카카오뱅크",
+    account: "3333-00-1234567",
+    owner: "내 몸에 효소욕", // 예금주
+    price: 40000, // 1회권 가격
+  };
 
   return (
-    <div className="h-screen bg-stone-50 flex flex-col items-center justify-center p-3 overflow-hidden">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-md p-6 mb-3">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">비회원 1회권 결제</h2>
-
-        <div className="mb-4">
-          <label className="block text-xl font-semibold text-gray-700 mb-2">이름</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="이름을 입력하세요"
-            className="w-full text-2xl p-3 border-2 border-stone-300 rounded-xl focus:border-emerald-600 focus:outline-none bg-stone-50"
-          />
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-stone-200 overflow-hidden">
+        {/* 헤더 */}
+        <div className="bg-emerald-600 p-6 text-center">
+          <h1 className="text-2xl font-bold text-white">비회원 1회 이용권</h1>
+          <p className="text-emerald-100 text-sm mt-1">
+            아래 계좌로 이체해 주세요
+          </p>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-xl font-semibold text-gray-700 mb-2">전화번호</label>
-          <input
-            type="text"
-            value={formatPhoneNumber(phone)}
-            readOnly
-            onClick={() => setShowKeypad(true)}
-            placeholder="전화번호를 입력하세요"
-            className="w-full text-2xl p-3 border-2 border-stone-300 rounded-xl bg-stone-50 cursor-pointer"
-          />
-        </div>
-
-        {showKeypad && (
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <button
-                key={num}
-                onClick={() => handleNumberClick(num.toString())}
-                className="bg-stone-100 border-2 border-stone-200 hover:bg-stone-200 text-3xl font-bold py-4 rounded-xl transition-all active:scale-95"
-              >
-                {num}
-              </button>
-            ))}
-            <button
-              onClick={handle010Click}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white text-lg font-bold py-4 rounded-xl transition-all active:scale-95 shadow-md"
-            >
-              010
-            </button>
-            <button
-              onClick={() => handleNumberClick("0")}
-              className="bg-stone-100 border-2 border-stone-200 hover:bg-stone-200 text-3xl font-bold py-4 rounded-xl transition-all active:scale-95"
-            >
-              0
-            </button>
-            <button
-              onClick={handleDelete}
-              className="bg-amber-500 hover:bg-amber-600 text-white text-lg font-bold py-4 rounded-xl transition-all active:scale-95 shadow-md"
-            >
-              ⌫
-            </button>
+        <div className="p-8">
+          {/* 1. 결제 금액 */}
+          <div className="text-center mb-8 bg-stone-50 p-6 rounded-2xl border border-stone-100">
+            <p className="text-stone-500 font-bold mb-2">결제하실 금액</p>
+            <p className="text-4xl font-extrabold text-emerald-600">
+              {BANK_INFO.price.toLocaleString()}원
+            </p>
           </div>
-        )}
 
-        <div className="bg-emerald-50 border-2 border-emerald-600 rounded-xl p-4 mb-4 text-center">
-          <p className="text-xl text-gray-700 mb-1">결제 금액</p>
-          <p className="text-4xl font-bold text-emerald-700">40,000원</p>
-          <p className="text-lg text-gray-600 mt-1">(1회권)</p>
+          {/* 2. 계좌 정보 (카드 형태) */}
+          <div className="mb-8 space-y-4">
+            <div className="flex justify-between items-center border-b border-stone-100 pb-3">
+              <span className="text-stone-500 font-bold">은행명</span>
+              <span className="text-xl font-bold text-gray-800">
+                {BANK_INFO.bank}
+              </span>
+            </div>
+            <div className="flex justify-between items-center border-b border-stone-100 pb-3">
+              <span className="text-stone-500 font-bold">계좌번호</span>
+              <span className="text-xl font-bold text-gray-800 tracking-wide">
+                {BANK_INFO.account}
+              </span>
+            </div>
+            <div className="flex justify-between items-center border-b border-stone-100 pb-3">
+              <span className="text-stone-500 font-bold">예금주</span>
+              <span className="text-xl font-bold text-gray-800">
+                {BANK_INFO.owner}
+              </span>
+            </div>
+          </div>
+
+          {/* 3. 안내 문구 */}
+          <div className="bg-yellow-50 p-4 rounded-xl mb-8 text-center border border-yellow-100">
+            <p className="text-yellow-700 font-bold text-sm flex items-center justify-center gap-2">
+              <span>🔔</span> 입금 내역을 관리자에게 보여주세요!
+            </p>
+          </div>
+
+          {/* 홈으로 버튼 */}
+          <button
+            onClick={() => router.push("/")}
+            className="w-full bg-stone-700 hover:bg-stone-800 text-white text-xl font-bold py-5 rounded-2xl shadow-lg active:scale-95 transition-all"
+          >
+            홈으로 돌아가기
+          </button>
         </div>
-
-        <button
-          onClick={handlePayment}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-2xl font-bold py-4 rounded-xl transition-all active:scale-95 shadow-lg"
-        >
-          결제하기
-        </button>
       </div>
-
-      <button
-        onClick={() => router.push("/")}
-        className="bg-stone-300 hover:bg-stone-400 text-gray-900 text-xl font-semibold py-3 px-8 rounded-xl transition-all active:scale-95 shadow-md"
-      >
-        처음으로
-      </button>
     </div>
-  )
+  );
 }
