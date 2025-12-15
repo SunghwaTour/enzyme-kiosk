@@ -9,9 +9,12 @@ export default function AdminPage() {
   const router = useRouter();
   // 기본 탭을 '회원 관리(members)'로 설정
   const [activeTab, setActiveTab] = useState("members");
+
   const [entryLogs, setEntryLogs] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [members, setMembers] = useState([]);
+  const [nonMembers, setNonMembers] = useState([]); // ✨ 비회원 목록 상태 추가
+
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [origin, setOrigin] = useState("");
@@ -56,9 +59,18 @@ export default function AdminPage() {
         const { data } = await supabase
           .from("purchase_history")
           .select("*")
+          .neq("pass_type", "비회원 1회권") // 일반 구매 내역 (비회원 제외)
           .order("purchase_date", { ascending: false })
           .limit(100);
         setPurchases(data || []);
+      } else if (activeTab === "non-members") {
+        // ✨ 비회원 탭 데이터 로딩
+        const { data } = await supabase
+          .from("purchase_history")
+          .select("*")
+          .eq("pass_type", "비회원 1회권") // 비회원만 필터링
+          .order("purchase_date", { ascending: false });
+        setNonMembers(data || []);
       }
     } catch (err) {
       console.error(err);
@@ -129,14 +141,11 @@ export default function AdminPage() {
     if (!confirm(`[관리자] '${member.name}' 회원을 강제 탈퇴시키겠습니까?`))
       return;
     try {
-      // 로그 남기기 (선택 사항)
-      await supabase
-        .from("member_logs")
-        .insert({
-          phone_number: member.phone_number,
-          name: member.name,
-          action_type: "강제탈퇴",
-        });
+      await supabase.from("member_logs").insert({
+        phone_number: member.phone_number,
+        name: member.name,
+        action_type: "강제탈퇴",
+      });
 
       const { error } = await supabase
         .from("members")
@@ -147,6 +156,27 @@ export default function AdminPage() {
       alert("삭제되었습니다.");
       loadData();
     } catch (err) {
+      alert("삭제 실패");
+    }
+  };
+
+  // ✨ 비회원 기록 삭제 함수
+  const handleDeleteNonMember = async (record) => {
+    if (!confirm(`'${record.name}'님의 비회원 기록을 삭제하시겠습니까?`))
+      return;
+
+    try {
+      const { error } = await supabase
+        .from("purchase_history")
+        .delete()
+        .eq("id", record.id);
+
+      if (error) throw error;
+
+      alert("삭제되었습니다.");
+      loadData(); // 목록 새로고침
+    } catch (err) {
+      console.error(err);
       alert("삭제 실패");
     }
   };
@@ -176,16 +206,17 @@ export default function AdminPage() {
         </div>
 
         {/* 탭 메뉴 */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
           {[
             { id: "members", label: "👥 회원 관리" },
+            { id: "non-members", label: "🎫 비회원 관리" }, // ✨ 탭 추가
             { id: "entry", label: "🚪 입실 기록" },
             { id: "purchase", label: "💳 구매 내역" },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-4 rounded-2xl text-lg font-bold transition-all shadow-sm ${
+              className={`flex-1 min-w-[140px] py-4 rounded-2xl text-lg font-bold transition-all shadow-sm ${
                 activeTab === tab.id
                   ? "bg-white text-[#4A5D4F] border-2 border-[#4A5D4F]"
                   : "bg-stone-200 text-stone-500 hover:bg-stone-300 border-2 border-transparent"
@@ -229,6 +260,14 @@ export default function AdminPage() {
                         </th>
                         <th className="p-5 font-bold text-center">관리</th>
                       </>
+                    ) : activeTab === "non-members" ? ( // ✨ 비회원 테이블 헤더
+                      <>
+                        <th className="p-5 font-bold">이용일시</th>
+                        <th className="p-5 font-bold">이름</th>
+                        <th className="p-5 font-bold">전화번호</th>
+                        <th className="p-5 font-bold">구분</th>
+                        <th className="p-5 font-bold text-center">관리</th>
+                      </>
                     ) : (
                       <>
                         <th className="p-5 font-bold">날짜/시간</th>
@@ -258,13 +297,12 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="p-5 text-center">
-                          {/* QR 코드 (클릭 시 사이트 연결) */}
+                          {/* QR 코드 */}
                           {m.qr_code && origin ? (
                             <a
                               href={`${origin}/my-qr/${m.qr_code}`}
                               target="_blank"
                               className="inline-block p-2 bg-white border border-stone-200 rounded-xl hover:border-[#4A5D4F] hover:scale-105 transition-all shadow-sm"
-                              title="클릭하면 모바일 티켓이 열립니다"
                             >
                               <QRCode
                                 value={`${origin}/my-qr/${m.qr_code}`}
@@ -290,6 +328,31 @@ export default function AdminPage() {
                               삭제
                             </button>
                           </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                  {/* ✨ 비회원 목록 */}
+                  {activeTab === "non-members" &&
+                    filterData(nonMembers).map((item) => (
+                      <tr key={item.id} className="hover:bg-[#F5F5F0]">
+                        <td className="p-5 text-stone-500">
+                          {new Date(item.purchase_date).toLocaleString()}
+                        </td>
+                        <td className="p-5 font-bold">{item.name}</td>
+                        <td className="p-5">{item.phone_number}</td>
+                        <td className="p-5">
+                          <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-bold border border-gray-200">
+                            {item.pass_type}
+                          </span>
+                        </td>
+                        <td className="p-5 text-center">
+                          <button
+                            onClick={() => handleDeleteNonMember(item)}
+                            className="bg-red-50 border border-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
+                          >
+                            삭제
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -332,7 +395,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* 회원 정보 수정 모달 */}
+      {/* 회원 정보 수정 모달 (기존 코드 유지) */}
       {isEditOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl p-8 animate-in zoom-in-95 duration-200">

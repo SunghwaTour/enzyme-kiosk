@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import AlertModal from "@/components/AlertModal";
 
 export default function WithdrawPage() {
   const router = useRouter();
@@ -11,6 +12,15 @@ export default function WithdrawPage() {
   const [loading, setLoading] = useState(false);
   const [foundMember, setFoundMember] = useState(null);
 
+  // 모달 상태
+  const [modal, setModal] = useState({
+    isOpen: false,
+    type: "alert",
+    title: "",
+    message: "",
+  });
+  const closeModal = () => setModal((prev) => ({ ...prev, isOpen: false }));
+
   const handlePhoneChange = (e) => {
     const raw = e.target.value.replace(/[^0-9]/g, "");
     if (raw.length <= 11) setPhone(raw);
@@ -18,7 +28,12 @@ export default function WithdrawPage() {
 
   const findMember = async () => {
     if (phone.length < 10) {
-      alert("전화번호를 정확히 입력해주세요.");
+      setModal({
+        isOpen: true,
+        type: "error",
+        title: "입력 오류",
+        message: "전화번호를 정확히 입력해주세요.",
+      });
       return;
     }
     setLoading(true);
@@ -29,50 +44,77 @@ export default function WithdrawPage() {
         .select("*")
         .eq("phone_number", formatted)
         .single();
-
-      if (data) {
-        setFoundMember(data);
-      } else {
-        alert("가입되지 않은 전화번호입니다.");
-      }
-    } catch (err) {
-      alert("오류가 발생했습니다.");
+      if (data) setFoundMember(data);
+      else
+        setModal({
+          isOpen: true,
+          type: "error",
+          title: "조회 실패",
+          message: "가입되지 않은 전화번호입니다.",
+        });
+    } catch {
+      setModal({
+        isOpen: true,
+        type: "error",
+        title: "오류",
+        message: "오류가 발생했습니다.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleWithdraw = async () => {
-    if (!password) {
-      alert("2차 비밀번호를 입력해주세요.");
-      return;
-    }
-
-    if (foundMember.second_password !== password) {
-      alert("비밀번호가 일치하지 않습니다.");
-      return;
-    }
-
-    if (!confirm(`정말로 '${foundMember.name}'님의 정보를 삭제하시겠습니까?`))
-      return;
-
-    setLoading(true);
-    try {
-      // 1. 삭제 전 로그 저장 (중요: 삭제되면 정보를 못 가져오므로 먼저 저장)
-      await supabase.from("member_logs").insert({
-        phone_number: foundMember.phone_number,
-        name: foundMember.name,
-        action_type: "탈퇴",
+  // 탈퇴 버튼 클릭 시 -> 모달 띄우기
+  const onWithdrawClick = () => {
+    if (!password)
+      return setModal({
+        isOpen: true,
+        title: "입력 필요",
+        message: "2차 비밀번호를 입력해주세요.",
+      });
+    if (foundMember.second_password !== password)
+      return setModal({
+        isOpen: true,
+        type: "error",
+        title: "비밀번호 불일치",
+        message: "비밀번호가 일치하지 않습니다.",
       });
 
-      // 2. 회원 삭제
+    setModal({
+      isOpen: true,
+      type: "confirm",
+      title: "정말 탈퇴하시겠습니까?",
+      message: `'${foundMember.name}'님의 모든 정보가 삭제되며,\n되돌릴 수 없습니다.`,
+    });
+  };
+
+  // 실제 탈퇴 처리
+  const processWithdraw = async () => {
+    setLoading(true);
+    try {
+      await supabase
+        .from("member_logs")
+        .insert({
+          phone_number: foundMember.phone_number,
+          name: foundMember.name,
+          action_type: "탈퇴",
+        });
       await supabase.from("members").delete().eq("id", foundMember.id);
 
-      alert("탈퇴가 완료되었습니다.");
-      router.push("/");
+      setModal({
+        isOpen: true,
+        type: "alert",
+        title: "탈퇴 완료",
+        message: "정상적으로 탈퇴되었습니다.",
+        onConfirm: () => router.push("/"),
+      });
     } catch (err) {
-      console.error(err);
-      alert("삭제 중 오류가 발생했습니다.");
+      setModal({
+        isOpen: true,
+        type: "error",
+        title: "오류",
+        message: "삭제 중 오류가 발생했습니다.",
+      });
     } finally {
       setLoading(false);
     }
@@ -80,6 +122,16 @@ export default function WithdrawPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6">
+      <AlertModal
+        isOpen={modal.isOpen}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeModal}
+        onConfirm={modal.type === "confirm" ? processWithdraw : modal.onConfirm}
+        loading={loading}
+      />
+
       <div className="w-full max-w-xl bg-white p-10 rounded-3xl shadow-xl border border-red-100">
         <h2 className="text-4xl font-bold text-red-600 mb-2 text-center">
           회원 탈퇴
@@ -134,7 +186,7 @@ export default function WithdrawPage() {
               />
             </div>
             <button
-              onClick={handleWithdraw}
+              onClick={onWithdrawClick}
               disabled={loading}
               className="w-full bg-red-600 text-white text-3xl font-bold py-6 rounded-2xl shadow-lg hover:bg-red-700 transition-colors"
             >
