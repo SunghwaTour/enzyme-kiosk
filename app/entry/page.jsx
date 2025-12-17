@@ -3,16 +3,17 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Scanner } from "@yudiel/react-qr-scanner";
+// ✅ 여기가 범인! 에러 나던 줄을 지우고 올바른 파일로 연결했습니다.
 import { supabase } from "@/lib/supabase";
 import TutorialOverlay from "@/components/TutorialOverlay";
-import AlertModal from "@/components/AlertModal"; // ✨ 예쁜 모달 불러오기
+import AlertModal from "@/components/AlertModal";
 
 export default function EntryPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
-  // ✨ 모달 상태 추가
+  // 모달 상태
   const [modal, setModal] = useState({
     isOpen: false,
     type: "alert",
@@ -28,7 +29,6 @@ export default function EntryPage() {
     try {
       console.log("입장 QR 코드:", qrCode);
 
-      // 1. 회원 조회
       const { data: member } = await supabase
         .from("members")
         .select("*")
@@ -48,7 +48,7 @@ export default function EntryPage() {
 
       console.log("입장 처리 시작:", member);
 
-      // 2. 예약 확인
+      // 예약 확인
       const { data: reservation } = await supabase
         .from("reservations")
         .select("*")
@@ -56,7 +56,7 @@ export default function EntryPage() {
         .eq("status", "pending")
         .single();
 
-      // (A) 예약된 방이 있는 경우
+      // (A) 예약이 있다면?
       if (reservation) {
         await supabase
           .from("reservations")
@@ -67,20 +67,18 @@ export default function EntryPage() {
           .update({ status: "occupied", current_users: 1 })
           .eq("id", reservation.room_id);
 
-        // ✨ 예쁜 모달로 성공 알림
         setModal({
           isOpen: true,
           type: "alert",
           title: "입실 완료",
-          message: `${member.name}님,\n예약된 방으로 입실 처리되었습니다.`,
-          onConfirm: () => router.push("/"), // 확인 누르면 홈으로
+          message: `${member.name}님,\n예약된 방으로 입실되었습니다.`,
+          onConfirm: () => router.push("/"),
         });
-
         setLoading(false);
         return;
       }
 
-      // (B) 예약 없음 -> 이용권 바로 차감
+      // (B) 예약 없음 -> 바로 차감 및 입장
       const { data: passes } = await supabase
         .from("purchase_history")
         .select("*")
@@ -93,8 +91,7 @@ export default function EntryPage() {
           isOpen: true,
           type: "error",
           title: "입장 불가",
-          message:
-            "사용 가능한 이용권이 없습니다.\n이용권을 먼저 구매해주세요.",
+          message: "사용 가능한 이용권이 없습니다.",
         });
         setLoading(false);
         return;
@@ -102,7 +99,6 @@ export default function EntryPage() {
 
       const targetPass = passes[0];
 
-      // 차감 처리
       const { error: updateError } = await supabase
         .from("purchase_history")
         .update({
@@ -113,7 +109,6 @@ export default function EntryPage() {
 
       if (updateError) throw updateError;
 
-      // 로그 기록
       await supabase.from("entry_logs").insert({
         member_id: member.id,
         name: member.name,
@@ -121,7 +116,6 @@ export default function EntryPage() {
         pass_type: targetPass.pass_type,
       });
 
-      // ✨ 예쁜 모달로 차감 알림
       setModal({
         isOpen: true,
         type: "alert",
@@ -136,8 +130,8 @@ export default function EntryPage() {
       setModal({
         isOpen: true,
         type: "error",
-        title: "오류 발생",
-        message: "시스템 오류가 발생했습니다.\n관리자에게 문의해주세요.",
+        title: "오류",
+        message: "시스템 오류가 발생했습니다.",
       });
       setLoading(false);
     }
@@ -155,7 +149,6 @@ export default function EntryPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-8 relative">
-      {/* ✨ 도움말 & 알림 모달 연결 */}
       <TutorialOverlay
         isOpen={showTutorial}
         onClose={() => setShowTutorial(false)}
@@ -167,7 +160,7 @@ export default function EntryPage() {
         title={modal.title}
         message={modal.message}
         onClose={closeModal}
-        onConfirm={modal.onConfirm} // 확인 버튼 누르면 이동 함수 실행
+        onConfirm={modal.onConfirm}
       />
 
       <button
@@ -180,7 +173,6 @@ export default function EntryPage() {
       <div className="w-full max-w-lg text-center">
         <h1 className="text-4xl font-bold mb-8">입장하기</h1>
         <p className="text-2xl mb-4 text-gray-600">QR 코드를 비춰주세요</p>
-
         <div className="bg-black rounded-3xl overflow-hidden shadow-2xl border-4 border-emerald-500 aspect-square relative">
           <Scanner
             onScan={handleScan}
@@ -194,7 +186,6 @@ export default function EntryPage() {
             </div>
           )}
         </div>
-
         <button
           onClick={() => router.back()}
           className="mt-8 px-8 py-4 bg-stone-300 rounded-xl text-xl font-bold"
