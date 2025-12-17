@@ -1,94 +1,132 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { useState } from "react";
+import TutorialOverlay from "@/components/TutorialOverlay";
 
-export default function HomePage() {
+export default function Home() {
   const router = useRouter();
+  const [showTutorial, setShowTutorial] = useState(false);
 
   return (
-    <div className="h-screen bg-[#F5F5F0] flex flex-col items-center justify-center p-6 overflow-hidden font-sans select-none relative">
-      {/* 1. 로고 및 헤더 영역 */}
-      <div className="mb-12 text-center animate-in fade-in slide-in-from-top-4 duration-700">
-        <h1 className="text-6xl font-extrabold text-[#4A5D4F] tracking-tight mb-4">
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-8 relative">
+      {/* ✨ page="home" 전달 */}
+      <TutorialOverlay
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        page="home"
+      />
+
+      <button
+        onClick={() => setShowTutorial(true)}
+        className="absolute top-8 right-8 bg-white p-4 rounded-full shadow-lg border-2 border-stone-200 text-stone-600 hover:bg-stone-100 hover:scale-110 hover:rotate-12 transition-all duration-300 z-10 group"
+        title="도움말 보기"
+      >
+        <span className="text-2xl font-bold block group-hover:animate-pulse">
+          ❓
+        </span>
+        <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs font-bold text-stone-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white px-2 py-1 rounded-md shadow-sm">
+          사용법
+        </span>
+      </button>
+
+      {/* ... (이하 기존 코드와 동일) ... */}
+      <div className="text-center mb-12 animate-in slide-in-from-top-10 duration-700">
+        <h1 className="text-5xl font-extrabold text-[#4A5D4F] mb-4 tracking-tight drop-shadow-sm">
           내몸에 효소욕
         </h1>
-        <p className="text-2xl text-[#8A9A8E] font-medium">
-          프리미엄 효소 찜질 & 힐링 스페이스
+        <p className="text-xl text-stone-500 font-medium">
+          원하시는 메뉴를 선택해주세요
         </p>
-        <div className="w-20 h-1.5 bg-[#4A5D4F] mx-auto mt-6 rounded-full opacity-20"></div>
       </div>
 
-      {/* 2. 메인 액션 버튼 (카드형 배치) */}
-      <div className="grid grid-cols-2 gap-8 w-full max-w-5xl mb-10">
-        {/* 입장하기 (QR 스캔) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
         <button
-          onClick={() => router.push("/entry?mode=qr")}
-          className="group bg-white p-12 rounded-[3rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.15)] transition-all duration-300 border border-[#E0E0D0] flex flex-col items-center justify-center gap-8 active:scale-[0.98]"
+          onClick={() => router.push("/purchase")}
+          className="group relative overflow-hidden bg-white p-10 rounded-[2.5rem] shadow-xl border border-stone-100 hover:border-emerald-200 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
         >
-          <div className="bg-[#E8F3EB] p-8 rounded-full group-hover:bg-[#4A5D4F] transition-colors duration-300 flex items-center justify-center w-44 h-44 relative">
-            <Image
-              src="/enter-icon.png"
-              alt="입장하기 아이콘"
-              width={100}
-              height={100}
-              className="object-contain transition-transform duration-300 group-hover:scale-110"
-            />
-          </div>
-          <div className="text-center">
-            <h2 className="text-4xl font-bold text-[#2C3E30] mb-3 group-hover:text-[#4A5D4F] transition-colors">
-              입장하기
-            </h2>
-            <p className="text-[#8A9A8E] text-xl">QR 코드를 스캔해주세요</p>
-          </div>
-        </button>
-
-        {/* 회원가입 (내 QR 만들기) */}
-        <button
-          onClick={() => router.push("/signup")}
-          className="group bg-[#4A5D4F] p-12 rounded-[3rem] shadow-[0_20px_40px_-15px_rgba(74,93,79,0.4)] hover:shadow-[0_30px_60px_-12px_rgba(74,93,79,0.5)] transition-all duration-300 flex flex-col items-center justify-center gap-8 active:scale-[0.98]"
-        >
-          <div className="bg-[#5C7262] p-8 rounded-full group-hover:bg-white transition-colors duration-300 flex items-center justify-center w-44 h-44">
-            <span className="text-7xl group-hover:scale-110 transition-transform duration-300">
-              ✨
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative z-10 flex flex-col items-center">
+            <span className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
+              🎫
             </span>
-          </div>
-          <div className="text-center">
-            <h2 className="text-4xl font-bold text-white mb-3">회원가입</h2>
-            <p className="text-[#C8D6CC] text-xl">나만의 QR 만들기</p>
+            <span className="text-3xl font-bold text-gray-800 mb-2">
+              이용권 구매
+            </span>
+            <span className="text-stone-500 text-lg">시간/기간권 충전하기</span>
           </div>
         </button>
-      </div>
 
-      {/* 3. 하단 서브 메뉴 (가로 배치) */}
-      <div className="w-full max-w-5xl bg-white rounded-[2rem] shadow-sm p-4 flex justify-between items-center border border-[#E0E0D0]">
-        {[
-          { label: "이용권 구매", path: "/purchase", icon: "💳" },
-          { label: "잔여 횟수", path: "/check", icon: "📊" },
-          { label: "비회원 입장", path: "/non-member", icon: "🎫" },
-          { label: "회원 탈퇴", path: "/withdraw", icon: "🚪" },
-        ].map((item, index) => (
-          <div key={item.label} className="flex-1 flex items-center">
-            <button
-              onClick={() => router.push(item.path)}
-              className="w-full py-6 hover:bg-[#F5F5F0] rounded-2xl transition-colors text-[#4A5D4F] font-bold text-2xl flex items-center justify-center gap-3 active:scale-95"
-            >
-              <span className="text-3xl">{item.icon}</span>
-              {item.label}
-            </button>
-            {/* 메뉴 사이 구분선 */}
-            {index < 3 && <div className="h-10 w-[1px] bg-[#E0E0D0]"></div>}
+        <button
+          onClick={() => router.push("/entry")}
+          className="group relative overflow-hidden bg-[#4A5D4F] p-10 rounded-[2.5rem] shadow-xl hover:bg-[#3A4D3F] hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative z-10 flex flex-col items-center text-white">
+            <span className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
+              🚪
+            </span>
+            <span className="text-3xl font-bold mb-2">입장하기</span>
+            <span className="text-emerald-100 text-lg">QR 찍고 입실하기</span>
           </div>
-        ))}
+        </button>
+
+        <button
+          onClick={() => router.push("/check")}
+          className="group bg-white p-8 rounded-[2rem] shadow-lg border border-stone-100 hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center hover:-translate-y-1"
+        >
+          <span className="text-5xl mb-3 group-hover:rotate-12 transition-transform">
+            📱
+          </span>
+          <span className="text-xl font-bold text-gray-800">
+            잔여 횟수 조회
+          </span>
+        </button>
+
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => router.push("/non-member")}
+            className="group bg-stone-100 p-6 rounded-[2rem] hover:bg-stone-200 transition-all duration-300 flex flex-col items-center justify-center shadow-inner hover:shadow-md"
+          >
+            <span className="text-4xl mb-2 grayscale group-hover:grayscale-0 transition-all">
+              🎟️
+            </span>
+            <span className="text-lg font-bold text-stone-600">
+              비회원 1회권
+            </span>
+          </button>
+          <button
+            onClick={() => router.push("/signup")}
+            className="group bg-emerald-50 border-2 border-emerald-100 p-6 rounded-[2rem] hover:bg-emerald-100 hover:border-emerald-200 transition-all duration-300 flex flex-col items-center justify-center shadow-sm hover:shadow-md"
+          >
+            <span className="text-4xl mb-2 group-hover:scale-110 transition-transform">
+              📝
+            </span>
+            <span className="text-lg font-bold text-emerald-700">회원가입</span>
+          </button>
+        </div>
       </div>
 
-      {/* 4. 관리자 모드 버튼 (화면 최하단에 표시) */}
-      <div className="absolute bottom-6 left-0 right-0 text-center">
+      <div className="mt-12 flex gap-8 text-stone-400 text-sm font-medium">
         <button
           onClick={() => router.push("/admin/login")}
-          className="text-[#8A9A8E] text-sm hover:text-[#4A5D4F] underline decoration-[#E0E0D0] underline-offset-4 transition-colors font-medium px-4 py-2"
+          className="hover:text-stone-600 hover:underline underline-offset-4 transition-colors"
         >
-          관리자 모드
+          관리자 설정
+        </button>
+        <span className="w-px h-4 bg-stone-300"></span>
+        <button
+          onClick={() => router.push("/find-qr")}
+          className="hover:text-stone-600 hover:underline underline-offset-4 transition-colors"
+        >
+          QR코드 찾기
+        </button>
+        <span className="w-px h-4 bg-stone-300"></span>
+        <button
+          onClick={() => router.push("/withdraw")}
+          className="hover:text-red-500 hover:underline underline-offset-4 transition-colors"
+        >
+          회원 탈퇴
         </button>
       </div>
     </div>

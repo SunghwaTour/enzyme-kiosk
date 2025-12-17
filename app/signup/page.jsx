@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import QRCode from "react-qr-code";
 import AlertModal from "@/components/AlertModal";
+import TutorialOverlay from "@/components/TutorialOverlay"; // ✨ 추가
 
 const PASS_TYPES = [
   { name: "1회권 (첫 체험)", count: 1, price: 35000 },
@@ -32,18 +33,16 @@ export default function SignupPage() {
     title: "",
     message: "",
   });
+  const [showTutorial, setShowTutorial] = useState(false); // ✨ 상태 추가
+
   const closeModal = () => setModal((prev) => ({ ...prev, isOpen: false }));
 
   useEffect(() => {
     if (typeof window !== "undefined") setOrigin(window.location.origin);
   }, []);
 
-  // ✨ 자동 하이픈 생성 로직 적용
   const handlePhoneChange = (e) => {
-    // 1. 숫자만 추출
     const raw = e.target.value.replace(/[^0-9]/g, "");
-
-    // 2. 길이에 따라 하이픈 추가
     let formatted = raw;
     if (raw.length < 4) {
       formatted = raw;
@@ -52,17 +51,12 @@ export default function SignupPage() {
     } else if (raw.length <= 11) {
       formatted = `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7)}`;
     }
-
-    // 3. 최대 길이 제한 (13자리: 010-1234-5678)
     if (formatted.length > 13) return;
-
     setPhone(formatted);
   };
 
   const goToPassSelection = async () => {
-    // 하이픈 제거 후 길이 체크
     const rawPhone = phone.replace(/-/g, "");
-
     if (!name || rawPhone.length < 10) {
       setModal({
         isOpen: true,
@@ -72,8 +66,6 @@ export default function SignupPage() {
       });
       return;
     }
-
-    // phone 상태값은 이미 "010-1234-5678" 형태이므로 그대로 조회에 사용
     const { data } = await supabase
       .from("members")
       .select("id")
@@ -97,20 +89,14 @@ export default function SignupPage() {
     let newMemberId = null;
 
     try {
-      // phone 상태값이 이미 포맷팅 되어있으므로 그대로 사용
       const formattedPhone = phone;
       const uniqueQrCode = crypto.randomUUID();
 
       const { data: newMember, error: memberError } = await supabase
         .from("members")
-        .insert({
-          name,
-          phone_number: formattedPhone,
-          qr_code: uniqueQrCode,
-        })
+        .insert({ name, phone_number: formattedPhone, qr_code: uniqueQrCode })
         .select()
         .single();
-
       if (memberError) throw memberError;
       newMemberId = newMember.id;
 
@@ -127,7 +113,6 @@ export default function SignupPage() {
         });
 
       if (purchaseError) throw purchaseError;
-
       const url = `${origin}/my-qr/${uniqueQrCode}`;
       setTicketUrl(url);
       setStep(3);
@@ -147,7 +132,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 relative">
       <AlertModal
         isOpen={modal.isOpen}
         type={modal.type}
@@ -156,6 +141,22 @@ export default function SignupPage() {
         onClose={closeModal}
       />
 
+      {/* ✨ 도움말 오버레이 (signup 모드) */}
+      <TutorialOverlay
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        page="signup"
+      />
+
+      {/* ✨ 도움말 버튼 */}
+      <button
+        onClick={() => setShowTutorial(true)}
+        className="absolute top-8 right-8 bg-white p-4 rounded-full shadow-lg border-2 border-stone-200 text-stone-600 hover:bg-stone-100 hover:scale-110 transition-all z-10"
+      >
+        <span className="text-2xl font-bold">❓</span>
+      </button>
+
+      {/* 이하 기존 코드 */}
       {step === 1 && (
         <div className="w-full max-w-xl bg-white p-10 rounded-3xl shadow-xl">
           <h2 className="text-4xl font-bold text-gray-900 mb-8 text-center">
