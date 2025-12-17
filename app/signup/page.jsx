@@ -21,7 +21,6 @@ export default function SignupPage() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  // 비밀번호 상태 제거됨
   const [selectedPass, setSelectedPass] = useState(null);
   const [loading, setLoading] = useState(false);
   const [ticketUrl, setTicketUrl] = useState("");
@@ -39,13 +38,32 @@ export default function SignupPage() {
     if (typeof window !== "undefined") setOrigin(window.location.origin);
   }, []);
 
+  // ✨ 자동 하이픈 생성 로직 적용
   const handlePhoneChange = (e) => {
+    // 1. 숫자만 추출
     const raw = e.target.value.replace(/[^0-9]/g, "");
-    if (raw.length <= 11) setPhone(raw);
+
+    // 2. 길이에 따라 하이픈 추가
+    let formatted = raw;
+    if (raw.length < 4) {
+      formatted = raw;
+    } else if (raw.length < 8) {
+      formatted = `${raw.slice(0, 3)}-${raw.slice(3)}`;
+    } else if (raw.length <= 11) {
+      formatted = `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7)}`;
+    }
+
+    // 3. 최대 길이 제한 (13자리: 010-1234-5678)
+    if (formatted.length > 13) return;
+
+    setPhone(formatted);
   };
 
   const goToPassSelection = async () => {
-    if (!name || phone.length < 10) {
+    // 하이픈 제거 후 길이 체크
+    const rawPhone = phone.replace(/-/g, "");
+
+    if (!name || rawPhone.length < 10) {
       setModal({
         isOpen: true,
         type: "error",
@@ -54,13 +72,12 @@ export default function SignupPage() {
       });
       return;
     }
-    // 비밀번호 검증 로직 제거됨
 
-    const formatted = phone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    // phone 상태값은 이미 "010-1234-5678" 형태이므로 그대로 조회에 사용
     const { data } = await supabase
       .from("members")
       .select("id")
-      .eq("phone_number", formatted)
+      .eq("phone_number", phone)
       .single();
     if (data) {
       setModal({
@@ -80,17 +97,16 @@ export default function SignupPage() {
     let newMemberId = null;
 
     try {
-      const formatted = phone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+      // phone 상태값이 이미 포맷팅 되어있으므로 그대로 사용
+      const formattedPhone = phone;
       const uniqueQrCode = crypto.randomUUID();
 
-      // DB 저장 시 second_password 필드 제외
       const { data: newMember, error: memberError } = await supabase
         .from("members")
         .insert({
           name,
-          phone_number: formatted,
+          phone_number: formattedPhone,
           qr_code: uniqueQrCode,
-          // second_password 삭제됨
         })
         .select()
         .single();
@@ -102,7 +118,7 @@ export default function SignupPage() {
         .from("purchase_history")
         .insert({
           member_id: newMember.id,
-          phone_number: formatted,
+          phone_number: formattedPhone,
           name: name,
           pass_type: selectedPass.name,
           purchase_count: selectedPass.count,
@@ -166,10 +182,9 @@ export default function SignupPage() {
                 value={phone}
                 onChange={handlePhoneChange}
                 className="w-full text-2xl p-4 border-2 border-stone-300 rounded-xl"
-                placeholder="01012345678"
+                placeholder="010-1234-5678"
               />
             </div>
-            {/* 비밀번호 입력란 삭제됨 */}
           </div>
           <button
             onClick={goToPassSelection}

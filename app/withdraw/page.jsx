@@ -78,13 +78,11 @@ export default function WithdrawPage() {
   const processWithdraw = async () => {
     setLoading(true);
     try {
-      await supabase
-        .from("member_logs")
-        .insert({
-          phone_number: foundMember.phone_number,
-          name: foundMember.name,
-          action_type: "탈퇴",
-        });
+      await supabase.from("member_logs").insert({
+        phone_number: foundMember.phone_number,
+        name: foundMember.name,
+        action_type: "탈퇴",
+      });
       await supabase.from("members").delete().eq("id", foundMember.id);
 
       setModal({
