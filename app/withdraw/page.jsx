@@ -8,11 +8,10 @@ import AlertModal from "@/components/AlertModal";
 export default function WithdrawPage() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  // 비밀번호 상태 제거됨
   const [loading, setLoading] = useState(false);
   const [foundMember, setFoundMember] = useState(null);
 
-  // 모달 상태
   const [modal, setModal] = useState({
     isOpen: false,
     type: "alert",
@@ -64,21 +63,9 @@ export default function WithdrawPage() {
     }
   };
 
-  // 탈퇴 버튼 클릭 시 -> 모달 띄우기
+  // 탈퇴 버튼 클릭 시 -> 비밀번호 확인 없이 바로 모달 띄우기
   const onWithdrawClick = () => {
-    if (!password)
-      return setModal({
-        isOpen: true,
-        title: "입력 필요",
-        message: "2차 비밀번호를 입력해주세요.",
-      });
-    if (foundMember.second_password !== password)
-      return setModal({
-        isOpen: true,
-        type: "error",
-        title: "비밀번호 불일치",
-        message: "비밀번호가 일치하지 않습니다.",
-      });
+    // 비밀번호 체크 로직 제거됨
 
     setModal({
       isOpen: true,
@@ -88,7 +75,6 @@ export default function WithdrawPage() {
     });
   };
 
-  // 실제 탈퇴 처리
   const processWithdraw = async () => {
     setLoading(true);
     try {
@@ -173,18 +159,9 @@ export default function WithdrawPage() {
                 {foundMember.phone_number}
               </p>
             </div>
-            <div className="mb-8 text-left">
-              <label className="block text-xl font-bold text-gray-700 mb-2">
-                2차 비밀번호 확인
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full text-2xl p-4 border-2 border-stone-300 rounded-xl"
-                placeholder="가입 시 입력한 비밀번호"
-              />
-            </div>
+
+            {/* 비밀번호 확인란 삭제됨 */}
+
             <button
               onClick={onWithdrawClick}
               disabled={loading}
@@ -195,7 +172,6 @@ export default function WithdrawPage() {
             <button
               onClick={() => {
                 setFoundMember(null);
-                setPassword("");
               }}
               className="w-full mt-4 py-3 text-lg text-gray-500 underline"
             >

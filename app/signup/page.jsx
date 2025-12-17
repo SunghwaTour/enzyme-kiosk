@@ -21,13 +21,12 @@ export default function SignupPage() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  // 비밀번호 상태 제거됨
   const [selectedPass, setSelectedPass] = useState(null);
   const [loading, setLoading] = useState(false);
   const [ticketUrl, setTicketUrl] = useState("");
   const [origin, setOrigin] = useState("");
 
-  // 모달 상태
   const [modal, setModal] = useState({
     isOpen: false,
     type: "alert",
@@ -55,15 +54,7 @@ export default function SignupPage() {
       });
       return;
     }
-    if (!password || password.length < 4) {
-      setModal({
-        isOpen: true,
-        type: "error",
-        title: "비밀번호 오류",
-        message: "2차 비밀번호를 4자리 이상 입력해주세요.",
-      });
-      return;
-    }
+    // 비밀번호 검증 로직 제거됨
 
     const formatted = phone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
     const { data } = await supabase
@@ -92,13 +83,14 @@ export default function SignupPage() {
       const formatted = phone.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
       const uniqueQrCode = crypto.randomUUID();
 
+      // DB 저장 시 second_password 필드 제외
       const { data: newMember, error: memberError } = await supabase
         .from("members")
         .insert({
           name,
           phone_number: formatted,
           qr_code: uniqueQrCode,
-          second_password: password,
+          // second_password 삭제됨
         })
         .select()
         .single();
@@ -136,11 +128,6 @@ export default function SignupPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // ... (QR 다운로드 로직은 동일) ...
-  const downloadQr = () => {
-    /* 기존 코드 유지 */
   };
 
   return (
@@ -182,19 +169,7 @@ export default function SignupPage() {
                 placeholder="01012345678"
               />
             </div>
-            <div>
-              <label className="block text-xl font-bold text-gray-700 mb-2">
-                2차 비밀번호 (4자리 이상)
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full text-2xl p-4 border-2 border-stone-300 rounded-xl"
-                placeholder="비밀번호 입력"
-                maxLength={20}
-              />
-            </div>
+            {/* 비밀번호 입력란 삭제됨 */}
           </div>
           <button
             onClick={goToPassSelection}
@@ -213,9 +188,7 @@ export default function SignupPage() {
         </div>
       )}
 
-      {/* 2단계, 3단계 코드는 기존과 동일하되 위쪽 AlertModal만 추가됨 */}
       {step === 2 && (
-        /* ... 기존 2단계 UI 코드 ... */
         <div className="w-full max-w-4xl">
           <h2 className="text-3xl font-bold text-center mb-6">
             구매할 이용권을 선택하세요
